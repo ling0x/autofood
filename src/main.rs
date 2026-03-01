@@ -7,8 +7,11 @@ use tokio::time::{sleep, Duration};
 
 #[tokio::main]
 async fn main() {
-    // Load .env variables
-    dotenv().ok();
+    // Load .env variables and add diagnostic logging
+    match dotenv() {
+        Ok(path) => println!("Successfully loaded .env file from: {}", path.display()),
+        Err(e) => eprintln!("Warning: Failed to load .env file: {}. Falling back to system environment variables...", e),
+    }
     
     let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string());
     let addr = format!("0.0.0.0:{}", port);
@@ -29,7 +32,8 @@ async fn run_automation() -> impl IntoResponse {
     let url = env::var("SUPERMARKET_URL").unwrap_or_else(|_| "https://www.planetorganic.com".to_string());
 
     if username.is_empty() || password.is_empty() {
-        return (StatusCode::BAD_REQUEST, "Missing credentials in .env file");
+        eprintln!("Error: Credentials missing! Username length: {}, Password length: {}", username.len(), password.len());
+        return (StatusCode::BAD_REQUEST, "Missing credentials in .env file. Please check that SUPERMARKET_USERNAME and SUPERMARKET_PASSWORD are set.");
     }
 
     // Load groceries from JSON
